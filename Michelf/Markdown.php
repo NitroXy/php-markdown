@@ -70,6 +70,8 @@ class Markdown {
 	var $predef_urls = array();
 	var $predef_titles = array();
 
+	# Change to false to not convert nl2br in paragraphs
+	var $nl2br = true;
 
 	### Parser Implementation ###
 
@@ -2590,7 +2592,9 @@ class _MarkdownExtra_TmpImpl extends \Michelf\Markdown {
 			# Clean tag hashes & block tag hashes are left alone.
 			$is_p = !preg_match('/^B\x1A[0-9]+B|^C\x1A[0-9]+C$/', $value);
 			
+
 			if ($is_p) {
+				if($this->nl2br) $value = nl2br($value);	
 				$value = "<p>$value</p>";
 			}
 			$grafs[$key] = $value;
