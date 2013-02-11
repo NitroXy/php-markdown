@@ -493,7 +493,8 @@ class Markdown {
 		"encodeAmpsAndAngles" =>  40,
 
 		"doItalicsAndBold"    =>  50,
-		"doHardBreaks"        =>  60,
+		"doRegexReplace"			=>  60,
+		"doHardBreaks"        =>  70,
 		);
 
 	function runSpanGamut($text) {
@@ -1003,9 +1004,19 @@ class Markdown {
 		''    => '(?:(?<!\*)\*\*\*(?!\*)|(?<!_)___(?!_))(?=\S|$)(?![\.,:;]\s)',
 		'***' => '(?<=\S|^)(?<!\*)\*\*\*(?!\*)',
 		'___' => '(?<=\S|^)(?<!_)___(?!_)',
-		);
-	var $em_strong_prepared_relist;
+	);
 	
+	private static function _strikethrough($match) { 
+		return "<s>{$match[1]}</s>";
+	}
+
+	var $regex_replace_callbacks = array(
+		"/(?<=\s|^)--(.+?)--(?=\s|$)/" => '_strikethrough'
+	);
+
+	var $em_strong_prepared_relist;
+
+
 	function prepareItalicsAndBold() {
 	#
 	# Prepare regular expressions for searching emphasis tokens in any
@@ -1026,6 +1037,15 @@ class Markdown {
 				$this->em_strong_prepared_relist["$em$strong"] = $token_re;
 			}
 		}
+	}
+
+	function doRegexReplace($text) {
+		foreach($this->regex_replace_callbacks as $regex => $callback) {
+			$text = preg_replace_callback($regex, function($match) use ($callback) {
+				return call_user_func(__NAMESPACE__ . "\Markdown::$callback", $match);
+			}, $text);
+		}
+		return $text;
 	}
 	
 	function doItalicsAndBold($text) {
