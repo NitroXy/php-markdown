@@ -1008,7 +1008,7 @@ class Markdown {
 		'___' => '(?<=\S|^)(?<!_)___(?!_)',
 	);
 	
-	private static function _strikethrough($match) { 
+	function _strikethrough($match) { 
 		return "<s>{$match[1]}</s>";
 	}
 
@@ -1043,9 +1043,7 @@ class Markdown {
 
 	function doRegexReplace($text) {
 		foreach($this->regex_replace_callbacks as $regex => $callback) {
-			$text = preg_replace_callback($regex, function($match) use ($callback) {
-				return call_user_func(__NAMESPACE__ . "\Markdown::$callback", $match);
-			}, $text);
+			$text = preg_replace_callback($regex, array(&$this, $callback), $text);
 		}
 		return $text;
 	}
