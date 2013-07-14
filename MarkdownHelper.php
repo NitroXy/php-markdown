@@ -1,6 +1,6 @@
 <?php
-require_once "$repo_root/libs/php-markdown/Michelf/Markdown.php";
-require_once "$repo_root/libs/php-markdown/Michelf/MarkdownExtra.php";
+require_once "Michelf/Markdown.php";
+require_once "Michelf/MarkdownExtra.php";
 
 use \Michelf\MarkdownExtra;
 

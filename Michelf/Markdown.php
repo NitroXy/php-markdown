@@ -1005,9 +1005,6 @@ class Markdown {
 		"/(?<=\s|^)--(.+?)--(?=\s|$)/" => '_strikethrough'
 	);
 
-	var $em_strong_prepared_relist;
-
-
 	protected $em_strong_prepared_relist;
 	
 	protected function prepareItalicsAndBold() {
