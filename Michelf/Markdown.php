@@ -176,7 +176,16 @@ class Markdown {
 
 		return $text . "\n";
 	}
-	
+
+	static function serialize_attr($data){
+	# Takes key-value array and serializes them to a string as 'key="value" foo="bar"'.
+		$attr = array();
+		foreach ( $data as $key => $value ){
+			$attr[] = $key . '="' . addslashes($value) . '"';
+		}
+		return implode(' ', $attr);
+	}
+
 	protected $document_gamut = array(
 		# Strip link definitions, store in hashes.
 		"stripLinkDefinitions" => 20,
@@ -927,6 +936,7 @@ class Markdown {
 		$leading_space =& $matches[2];
 		$marker_space = $matches[3];
 		$tailing_blank_line =& $matches[6];
+		$attr = array();
 
 		if ($leading_line || $tailing_blank_line ||
 			preg_match('/\n{2,}/', $item))
@@ -942,16 +952,17 @@ class Markdown {
 			$item = $this->runSpanGamut($item);
 		}
 
-		$attr = '';
+		# Process custom li-classes
 		if ( $this->li_class_allow && !empty($class)){
 			# append prefix to each class
 			$prefix = $this->li_class_prefix;
 			$class = implode(' ', array_map(function($x) use ($prefix) { return "$prefix$x"; }, explode(' ', $class)));
 
-			$attr = ' class="' . addslashes($class) . '"';
+			$attr['class'] = $class;
 		}
 
-		return "<li$attr>" . $item . "</li>\n";
+		$attr = static::serialize_attr($attr);
+		return "<li $attr>" . $item . "</li>\n";
 	}
 
 
