@@ -62,6 +62,10 @@ class Markdown {
 	# Change to false to not convert nl2br in paragraphs
 	var $nl2br = true;
 
+	# Options for li-class parser
+	var $li_class_allow = false;
+	var $li_class_prefix = '';
+
 	### Parser Implementation ###
 
 	# Regex to match balanced [brackets].
@@ -939,7 +943,11 @@ class Markdown {
 		}
 
 		$attr = '';
-		if ( !empty($class) ){
+		if ( $this->li_class_allow && !empty($class)){
+			# append prefix to each class
+			$prefix = $this->li_class_prefix;
+			$class = implode(' ', array_map(function($x) use ($prefix) { return "$prefix$x"; }, explode(' ', $class)));
+
 			$attr = ' class="' . addslashes($class) . '"';
 		}
 
