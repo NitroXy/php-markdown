@@ -62,6 +62,10 @@ class Markdown {
 	# Change to false to not convert nl2br in paragraphs
 	var $nl2br = true;
 
+	# Options for li-class parser
+	var $li_class_allow = false;
+	var $li_class_prefix = '';
+
 	### Parser Implementation ###
 
 	# Regex to match balanced [brackets].
@@ -172,7 +176,16 @@ class Markdown {
 
 		return $text . "\n";
 	}
-	
+
+	static function serialize_attr($data){
+	# Takes key-value array and serializes them to a string as 'key="value" foo="bar"'.
+		$attr = array();
+		foreach ( $data as $key => $value ){
+			$attr[] = $key . '="' . addslashes($value) . '"';
+		}
+		return implode(' ', $attr);
+	}
+
 	protected $document_gamut = array(
 		# Strip link definitions, store in hashes.
 		"stripLinkDefinitions" => 20,
@@ -790,8 +803,8 @@ class Markdown {
 		$less_than_tab = $this->tab_width - 1;
 
 		# Re-usable patterns to match list item bullets and number markers:
-		$marker_ul_re  = '[*+-]';
-		$marker_ol_re  = '\d+[\.]';
+		$marker_ul_re  = '[*+-](?:<[^>"]*>)?';
+		$marker_ol_re  = '\d+[\.](?:<[^>"]*>)?';
 		$marker_any_re = "(?:$marker_ul_re|$marker_ol_re)";
 
 		$markers_relist = array(
@@ -856,8 +869,8 @@ class Markdown {
 		$marker_any_re = "(?:$marker_ul_re|$marker_ol_re)";
 		
 		$list = $matches[1];
-		$list_type = preg_match("/$marker_ul_re/", $matches[4]) ? "ul" : "ol";
-		
+		$list_type = preg_match("/$marker_ul_re(?:<[^>\"]*>)?/", $matches[4]) ? "ul" : "ol";
+
 		$marker_any_re = ( $list_type == "ul" ? $marker_ul_re : $marker_ol_re );
 		
 		$list .= "\n";
@@ -904,11 +917,12 @@ class Markdown {
 			(\n)?							# leading line = $1
 			(^[ ]*)							# leading whitespace = $2
 			('.$marker_any_re.'				# list marker and space = $3
+			(?:<([^>"]*)>)?					# optional class for item = $4
 				(?:[ ]+|(?=\n))	# space only required if item is not empty
 			)
-			((?s:.*?))						# list item text   = $4
-			(?:(\n+(?=\n))|\n)				# tailing blank line = $5
-			(?= \n* (\z | \2 ('.$marker_any_re.') (?:[ ]+|(?=\n))))
+			((?s:.*?))						# list item text   = $5
+			(?:(\n+(?=\n))|\n)				# tailing blank line = $6
+			(?= \n* (\z | \2 ('.$marker_any_re.'(?:<([^>"]*)>)?) (?:[ ]+|(?=\n))))
 			}xm',
 			array(&$this, '_processListItems_callback'), $list_str);
 
@@ -916,13 +930,15 @@ class Markdown {
 		return $list_str;
 	}
 	protected function _processListItems_callback($matches) {
-		$item = $matches[4];
+		$item = $matches[5];
+		$class = $matches[4];
 		$leading_line =& $matches[1];
 		$leading_space =& $matches[2];
 		$marker_space = $matches[3];
-		$tailing_blank_line =& $matches[5];
+		$tailing_blank_line =& $matches[6];
+		$attr = array();
 
-		if ($leading_line || $tailing_blank_line || 
+		if ($leading_line || $tailing_blank_line ||
 			preg_match('/\n{2,}/', $item))
 		{
 			# Replace marker with the appropriate whitespace indentation
@@ -936,7 +952,17 @@ class Markdown {
 			$item = $this->runSpanGamut($item);
 		}
 
-		return "<li>" . $item . "</li>\n";
+		# Process custom li-classes
+		if ( $this->li_class_allow && !empty($class)){
+			# append prefix to each class
+			$prefix = $this->li_class_prefix;
+			$class = implode(' ', array_map(function($x) use ($prefix) { return "$prefix$x"; }, explode(' ', $class)));
+
+			$attr['class'] = $class;
+		}
+
+		$attr = static::serialize_attr($attr);
+		return "<li $attr>" . $item . "</li>\n";
 	}
 
 
